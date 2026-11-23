@@ -7,7 +7,9 @@ import {
   Download,
   FileSpreadsheet,
   MapPin,
+  Moon,
   Pencil,
+  Sun,
   Trash2,
   Upload,
   User,
@@ -22,6 +24,8 @@ interface ProfilePageProps {
   profile: UserProfile;
   applicationsCount: number;
   storageHealth: StorageHealth;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
   onEditProfile: () => void;
   onExportJSON: () => void;
   onExportCSV: () => void;
@@ -34,6 +38,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   profile,
   applicationsCount,
   storageHealth,
+  theme = 'light',
+  onToggleTheme,
   onEditProfile,
   onExportJSON,
   onExportCSV,
@@ -163,7 +169,48 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </button>
       </section>
 
-      {/* Section 6.2: Data & Backup Management (TS-06 & US-22) */}
+      {/* Section 6.2: Dark Mode Theme Switcher */}
+      <section className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 space-y-3.5 shadow-xs">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#2B4233] text-[#F2A86F]">
+              {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </div>
+            <div>
+              <h2 className="font-display text-sm font-bold text-[#1D2A22]">
+                Thème Sombre (#111A14)
+              </h2>
+              <p className="text-xs text-[#5E6B62]">
+                {theme === 'dark' ? 'Actif · Forêt profonde' : 'Inactif · Crème naturelle'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={theme === 'dark'}
+            onClick={onToggleTheme}
+            className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors duration-300 ease-in-out cursor-pointer p-1 ${
+              theme === 'dark' ? 'bg-[#2B4233]' : 'bg-[#E8E0D2]'
+            }`}
+          >
+            <span className="sr-only">Activer le mode sombre</span>
+            <span
+              className={`pointer-events-none inline-flex h-6 w-6 transform items-center justify-center rounded-full bg-[#F2A86F] text-[#1D2A22] shadow-sm transition-transform duration-300 ease-in-out ${
+                theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            >
+              {theme === 'dark' ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+            </span>
+          </button>
+        </div>
+        <p className="text-[11px] text-[#5E6B62] leading-relaxed">
+          Ambiance feutrée ardoise forêt conçue pour les sessions de travail prolongées, tout en préservant les contrastes des badges et boutons Paw &amp; Co.
+        </p>
+      </section>
+
+      {/* Section 6.3: Data & Backup Management (TS-06 & US-22) */}
       <section className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 space-y-4">
         <div className="flex items-center gap-2.5">
           <Database className="h-4 w-4 text-[#2B4233]" />

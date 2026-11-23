@@ -39,6 +39,7 @@ import { storage } from '../db/storage';
 import { calculateJobMatch } from '../utils/matcher';
 import { LearningResourceBlock } from '../components/LearningResourceBlock';
 import { PortfolioProjectBuilder } from '../components/PortfolioProjectBuilder';
+import { triggerConfetti } from '../utils/confetti';
 
 interface CareerPlannerPageProps {
   dataset: MarketDataset;
@@ -72,6 +73,24 @@ export const CareerPlannerPage: React.FC<CareerPlannerPageProps> = ({
   const [plannerMode, setPlannerMode] = useState<'offline' | 'gemini'>('offline');
   const [apiKey, setApiKey] = useState<string>(getStoredGeminiKey());
   const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
+
+  // Segmented navigation tab state ('roadmap' | 'portfolio' | 'adapt')
+  const [activeTab, setActiveTab] = useState<'roadmap' | 'portfolio' | 'adapt'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.sessionStorage.getItem('career_radar_planner_tab');
+      if (saved === 'roadmap' || saved === 'portfolio' || saved === 'adapt') {
+        return saved;
+      }
+    }
+    return 'roadmap';
+  });
+
+  const handleTabChange = (tab: 'roadmap' | 'portfolio' | 'adapt') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('career_radar_planner_tab', tab);
+    }
+  };
 
   // Accordion state for milestones (default all open)
   const [expandedMilestones, setExpandedMilestones] = useState<Record<string, boolean>>({
@@ -143,6 +162,20 @@ export const CareerPlannerPage: React.FC<CareerPlannerPageProps> = ({
   }, [dataset.titles, userSkillSet]);
 
   const handleToggleTask = async (milestoneId: string, taskId: string) => {
+    // Check if completing this task finishes the full milestone week
+    if (plan) {
+      const milestone = plan.milestones.find((m) => m.id === milestoneId);
+      if (milestone) {
+        const willBeAllDone = milestone.tasks.every((t) =>
+          t.id === taskId ? !t.completed : t.completed
+        );
+        if (willBeAllDone) {
+          triggerConfetti({ count: 70 });
+          onShowToast(`🎉 Semaine ${milestone.weekNumber} complétée à 100% ! Bravo !`);
+        }
+      }
+    }
+
     // Optimistic UI update
     if (plan) {
       const updated = {
@@ -614,261 +647,314 @@ export const CareerPlannerPage: React.FC<CareerPlannerPageProps> = ({
             </div>
           </div>
 
-          {/* Section 4: AI Plan Adaptation ("Adapt My Plan") */}
-          <div className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 shadow-sm space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#2B4233] text-[#F2A86F] shadow-xs">
-                  <RefreshCw className={`h-4 w-4 ${isAdapting ? 'animate-spin' : ''}`} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-display text-xs font-bold text-[#1D2A22]">
-                      Adaptation Continue du Plan
-                    </h2>
-                    <span className="rounded-full bg-[#FDE8D3] px-2 py-0.5 text-[9px] font-bold text-[#D97E3E]">
-                      IA Dynamique
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-[#5E6B62] block mt-0.5">
-                    Évalue tes acquis et repriorise les semaines restantes
-                  </span>
-                </div>
-              </div>
-
-              <div className="text-right shrink-0">
-                <span className="font-mono text-xs font-bold text-[#2B4233] tabular-nums">
-                  {completedTasks}/{totalTasks} faits
-                </span>
-              </div>
-            </div>
-
-            {/* Adaptation note if already adapted */}
-            {plan.adaptationNote && (
-              <div className="rounded-2xl bg-[#EAF0EC] border border-[#CBD8CF] p-3 text-xs text-[#2B4233] space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-semibold text-[#1F6E4A]">
-                  <span>Dernière réadaptation</span>
-                  {plan.adaptedAt && (
-                    <span>{new Date(plan.adaptedAt).toLocaleDateString('fr-FR')}</span>
-                  )}
-                </div>
-                <p className="text-[11px] leading-relaxed">{plan.adaptationNote}</p>
-              </div>
-            )}
-
-            <p className="text-xs text-[#5E6B62] leading-relaxed">
-              Tu avances plus vite ou tu bloques sur un sujet ? Le moteur réanalyse les 4 774 offres,
-              recalcule ton score cible et réorganise les tâches restantes selon leur ROI immédiat.
-            </p>
-
-            <button
-              type="button"
-              disabled={isAdapting}
-              onClick={() => void handleAdaptPlan()}
-              className="w-full flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#2B4233] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#203327] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer"
-            >
-              <Sparkles className="h-4 w-4 text-[#F2A86F]" />
-              <span>
-                {isAdapting
-                  ? 'Réadaptation du plan en cours...'
-                  : 'Adapter mon plan selon ma progression'}
-              </span>
-            </button>
-          </div>
-
-          {/* Strategic Moroccan Market Advice Card */}
-          <div className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#1D2A22]">
-              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FAF7F2] text-[#D97E3E] border border-[#E8E0D2]">
-                <Lightbulb className="h-4 w-4" />
-              </div>
-              Conseil Stratégique Marché Maroc
-            </div>
-            <p className="text-xs text-[#5E6B62] leading-relaxed">
-              {plan.strategicAdvice}
-            </p>
-
-            <div className="rounded-2xl bg-[#FAF7F2] border border-[#E8E0D2] p-3 text-[11px] text-[#1D2A22] flex items-start gap-2.5">
-              <MapPin className="h-4 w-4 text-[#D97E3E] shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <span className="font-bold text-[#1D2A22] block">Focus {userCityName}</span>
-                <span className="text-[#5E6B62] leading-tight block">
-                  {plan.localMarketNote}
-                </span>
-              </div>
+          {/* Sticky Segmented Navigation Tabs */}
+          <div className="sticky top-0 z-20 -mx-5 px-5 py-2.5 bg-[#F7F3EB]/95 dark:bg-[#111A14]/95 backdrop-blur-md border-y border-[#E8E0D2] dark:border-[#263C2E] transition-colors">
+            <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-white dark:bg-[#18261E] border border-[#E8E0D2] dark:border-[#263C2E] shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleTabChange('roadmap')}
+                className={`flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'roadmap'
+                    ? 'bg-[#2B4233] text-white shadow-xs'
+                    : 'text-[#5E6B62] hover:text-[#1D2A22]'
+                }`}
+              >
+                <span>🗺️</span>
+                <span className="truncate">Route</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange('portfolio')}
+                className={`flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'portfolio'
+                    ? 'bg-[#2B4233] text-white shadow-xs'
+                    : 'text-[#5E6B62] hover:text-[#1D2A22]'
+                }`}
+              >
+                <span>🛠️</span>
+                <span className="truncate">Portfolio</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange('adapt')}
+                className={`flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'adapt'
+                    ? 'bg-[#2B4233] text-white shadow-xs'
+                    : 'text-[#5E6B62] hover:text-[#1D2A22]'
+                }`}
+              >
+                <span>⚡</span>
+                <span className="truncate">Adapter</span>
+              </button>
             </div>
           </div>
 
-          {/* Interactive Milestones Checklist */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="font-display text-sm font-bold text-[#1D2A22] flex items-center gap-1.5">
-                <Layers className="h-4 w-4 text-[#2B4233]" />
-                Jalons &amp; Tâches Hebdomadaires
-              </h2>
-              <span className="text-[11px] text-[#5E6B62]">
-                {plan.milestones.length} étapes
-              </span>
-            </div>
+          {/* TAB 1: FEUILLE DE ROUTE (Weekly Milestones & Task Checklists) */}
+          {activeTab === 'roadmap' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="font-display text-sm font-bold text-[#1D2A22] flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-[#2B4233]" />
+                  Jalons &amp; Tâches Hebdomadaires
+                </h2>
+                <span className="text-[11px] text-[#5E6B62]">
+                  {plan.milestones.length} étapes
+                </span>
+              </div>
 
-            {plan.milestones.map((milestone) => {
-              const isExpanded = expandedMilestones[milestone.id] ?? true;
-              const milestoneDoneCount = milestone.tasks.filter((t) => t.completed).length;
-              const isAllDone =
-                milestone.tasks.length > 0 && milestoneDoneCount === milestone.tasks.length;
+              {plan.milestones.map((milestone) => {
+                const isExpanded = expandedMilestones[milestone.id] ?? true;
+                const milestoneDoneCount = milestone.tasks.filter((t) => t.completed).length;
+                const isAllDone =
+                  milestone.tasks.length > 0 && milestoneDoneCount === milestone.tasks.length;
 
-              const milestoneSkillNames = milestone.skillIds
-                .map((id) => skillMap.get(id))
-                .filter((n): n is string => Boolean(n));
+                const milestoneSkillNames = milestone.skillIds
+                  .map((id) => skillMap.get(id))
+                  .filter((n): n is string => Boolean(n));
 
-              const displaySkillNames =
-                milestoneSkillNames.length > 0
-                  ? milestoneSkillNames
-                  : plan.portfolioProject.techStack.slice(0, 2);
+                const displaySkillNames =
+                  milestoneSkillNames.length > 0
+                    ? milestoneSkillNames
+                    : plan.portfolioProject.techStack.slice(0, 2);
 
-              return (
-                <div
-                  key={milestone.id}
-                  className={`rounded-[26px] bg-white border transition-all shadow-sm ${
-                    isAllDone ? 'border-[#1F6E4A]/30 bg-[#FAFBF9]' : 'border-[#E8E0D2]'
-                  }`}
-                >
-                  {/* Milestone Header Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => toggleMilestoneAccordion(milestone.id)}
-                    className="w-full p-4 flex items-center justify-between gap-3 text-left cursor-pointer"
+                return (
+                  <div
+                    key={milestone.id}
+                    className={`rounded-[26px] bg-white border transition-all shadow-sm ${
+                      isAllDone ? 'border-[#1F6E4A]/30 bg-[#FAFBF9]' : 'border-[#E8E0D2]'
+                    }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${
-                          isAllDone
-                            ? 'bg-[#1F6E4A] text-white'
-                            : 'bg-[#FAF7F2] text-[#2B4233] border border-[#E8E0D2]'
-                        }`}
-                      >
-                        {isAllDone ? (
-                          <CheckCircle2 className="h-5 w-5" />
+                    {/* Milestone Header Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => toggleMilestoneAccordion(milestone.id)}
+                      className="w-full p-4 flex items-center justify-between gap-3 text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${
+                            isAllDone
+                              ? 'bg-[#1F6E4A] text-white'
+                              : 'bg-[#FAF7F2] text-[#2B4233] border border-[#E8E0D2]'
+                          }`}
+                        >
+                          {isAllDone ? (
+                            <CheckCircle2 className="h-5 w-5" />
+                          ) : (
+                            <span>{milestone.weekNumber}</span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-display text-xs font-bold text-[#1D2A22] truncate">
+                            {milestone.title}
+                          </h3>
+                          <span className="text-[11px] text-[#5E6B62]">
+                            {milestoneDoneCount} / {milestone.tasks.length} validées
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-[#5E6B62]">
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
                         ) : (
-                          <span>{milestone.weekNumber}</span>
+                          <ChevronDown className="h-4 w-4" />
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <h3 className="font-display text-xs font-bold text-[#1D2A22] truncate">
-                          {milestone.title}
-                        </h3>
-                        <span className="text-[11px] text-[#5E6B62]">
-                          {milestoneDoneCount} / {milestone.tasks.length} validées
-                        </span>
-                      </div>
-                    </div>
+                    </button>
 
-                    <div className="shrink-0 text-[#5E6B62]">
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </div>
-                  </button>
+                    {/* Milestone Content */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-1 space-y-3.5 border-t border-[#E8E0D2]/60">
+                        <p className="text-[11px] text-[#5E6B62] leading-relaxed">
+                          {milestone.description}
+                        </p>
 
-                  {/* Milestone Content */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 space-y-3.5 border-t border-[#E8E0D2]/60">
-                      <p className="text-[11px] text-[#5E6B62] leading-relaxed">
-                        {milestone.description}
-                      </p>
-
-                      {/* Interactive Tasks Checklist */}
-                      <div className="space-y-2">
-                        {milestone.tasks.map((task) => (
-                          <button
-                            key={task.id}
-                            type="button"
-                            onClick={() => handleToggleTask(milestone.id, task.id)}
-                            className={`w-full flex items-start gap-2.5 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
-                              task.completed
-                                ? 'bg-[#1F6E4A]/5 text-[#1D2A22]'
-                                : 'bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#1D2A22]'
-                            }`}
-                          >
-                            <div className="mt-0.5 shrink-0 text-[#2B4233]">
-                              {task.completed ? (
-                                <CheckCircle2 className="h-4 w-4 text-[#1F6E4A]" />
-                              ) : (
-                                <Circle className="h-4 w-4 text-[#5E6B62]" />
-                              )}
-                            </div>
-                            <span
-                              className={`text-xs leading-snug ${
+                        {/* Interactive Tasks Checklist */}
+                        <div className="space-y-2">
+                          {milestone.tasks.map((task) => (
+                            <button
+                              key={task.id}
+                              type="button"
+                              onClick={() => handleToggleTask(milestone.id, task.id)}
+                              className={`w-full flex items-start gap-2.5 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
                                 task.completed
-                                  ? 'line-through text-[#5E6B62]'
-                                  : 'font-medium text-[#1D2A22]'
+                                  ? 'bg-[#1F6E4A]/5 text-[#1D2A22]'
+                                  : 'bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#1D2A22]'
                               }`}
                             >
-                              {task.label}
+                              <div className="mt-0.5 shrink-0 text-[#2B4233]">
+                                {task.completed ? (
+                                  <CheckCircle2 className="h-4 w-4 text-[#1F6E4A]" />
+                                ) : (
+                                  <Circle className="h-4 w-4 text-[#5E6B62]" />
+                                )}
+                              </div>
+                              <span
+                                className={`text-xs leading-snug ${
+                                  task.completed
+                                    ? 'line-through text-[#5E6B62]'
+                                    : 'font-medium text-[#1D2A22]'
+                                }`}
+                              >
+                                {task.label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {milestone.recommendedProject && (
+                          <div className="rounded-xl bg-[#FDE8D3]/40 border border-[#F2A86F]/30 p-2.5 text-[11px] text-[#1D2A22] flex items-center gap-2">
+                            <BookOpen className="h-3.5 w-3.5 text-[#D97E3E] shrink-0" />
+                            <span>
+                              <strong>Projet clé :</strong> {milestone.recommendedProject}
                             </span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {milestone.recommendedProject && (
-                        <div className="rounded-xl bg-[#FDE8D3]/40 border border-[#F2A86F]/30 p-2.5 text-[11px] text-[#1D2A22] flex items-center gap-2">
-                          <BookOpen className="h-3.5 w-3.5 text-[#D97E3E] shrink-0" />
-                          <span>
-                            <strong>Projet clé :</strong> {milestone.recommendedProject}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* 1-Tap Learning Resources (YouTube, W3Schools, GeeksforGeeks, Official Docs) */}
-                      {displaySkillNames.length > 0 && (
-                        <div className="pt-2 border-t border-[#E8E0D2]/60 space-y-2">
-                          <span className="text-[11px] font-bold text-[#1D2A22] flex items-center gap-1.5">
-                            <BookOpen className="h-3.5 w-3.5 text-[#D97E3E]" />
-                            Tutoriels &amp; Documentation 1-tap :
-                          </span>
-                          <div className="space-y-2">
-                            {displaySkillNames.map((sName) => (
-                              <LearningResourceBlock key={sName} skillName={sName} />
-                            ))}
                           </div>
-                        </div>
+                        )}
+
+                        {/* 1-Tap Learning Resources (YouTube, W3Schools, GeeksforGeeks, Official Docs) */}
+                        {displaySkillNames.length > 0 && (
+                          <div className="pt-2 border-t border-[#E8E0D2]/60 space-y-2">
+                            <span className="text-[11px] font-bold text-[#1D2A22] flex items-center gap-1.5">
+                              <BookOpen className="h-3.5 w-3.5 text-[#D97E3E]" />
+                              Tutoriels &amp; Documentation 1-tap :
+                            </span>
+                            <div className="space-y-2">
+                              {displaySkillNames.map((sName) => (
+                                <LearningResourceBlock key={sName} skillName={sName} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* TAB 2: PROJETS PORTFOLIO */}
+          {activeTab === 'portfolio' && (
+            <div className="space-y-4">
+              <PortfolioProjectBuilder
+                targetRoleTitle={plan.targetRoleTitle}
+                missingSkills={plan.portfolioProject.techStack}
+                onShowToast={onShowToast}
+              />
+            </div>
+          )}
+
+          {/* TAB 3: ADAPTER & STATS (AI Adaptation, Moroccan Advice & Interview Prep) */}
+          {activeTab === 'adapt' && (
+            <div className="space-y-5">
+              {/* AI Plan Adaptation Control */}
+              <div className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 shadow-sm space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#2B4233] text-[#F2A86F] shadow-xs">
+                      <RefreshCw className={`h-4 w-4 ${isAdapting ? 'animate-spin' : ''}`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="font-display text-xs font-bold text-[#1D2A22]">
+                          Adaptation Continue du Plan
+                        </h2>
+                        <span className="rounded-full bg-[#FDE8D3] px-2 py-0.5 text-[9px] font-bold text-[#D97E3E]">
+                          IA Dynamique
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-[#5E6B62] block mt-0.5">
+                        Évalue tes acquis et repriorise les semaines restantes
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="font-mono text-xs font-bold text-[#2B4233] tabular-nums">
+                      {completedTasks}/{totalTasks} faits
+                    </span>
+                  </div>
+                </div>
+
+                {/* Adaptation note if already adapted */}
+                {plan.adaptationNote && (
+                  <div className="rounded-2xl bg-[#EAF0EC] border border-[#CBD8CF] p-3 text-xs text-[#2B4233] space-y-1">
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-[#1F6E4A]">
+                      <span>Dernière réadaptation</span>
+                      {plan.adaptedAt && (
+                        <span>{new Date(plan.adaptedAt).toLocaleDateString('fr-FR')}</span>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    <p className="text-[11px] leading-relaxed">{plan.adaptationNote}</p>
+                  </div>
+                )}
 
-          {/* Interactive Portfolio & Project Builder Module */}
-          <PortfolioProjectBuilder
-            targetRoleTitle={plan.targetRoleTitle}
-            missingSkills={plan.portfolioProject.techStack}
-            onShowToast={onShowToast}
-          />
+                <p className="text-xs text-[#5E6B62] leading-relaxed">
+                  Tu avances plus vite ou tu bloques sur un sujet ? Le moteur réanalyse les 4 774 offres,
+                  recalcule ton score cible et réorganise les tâches restantes selon leur ROI immédiat.
+                </p>
 
-          {/* Interview Preparation Tips */}
-          <div className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 shadow-sm space-y-3">
-            <h2 className="font-display text-xs font-bold text-[#1D2A22] flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-[#D97E3E]" />
-              Questions Clés en Entretien Technique (Maroc)
-            </h2>
-            <div className="space-y-2">
-              {plan.interviewTips.map((tip, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-xl bg-[#FAF7F2] p-3 text-xs text-[#1D2A22] leading-snug flex items-start gap-2.5 border border-[#E8E0D2]"
+                <button
+                  type="button"
+                  disabled={isAdapting}
+                  onClick={() => void handleAdaptPlan()}
+                  className="w-full flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#2B4233] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#203327] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer"
                 >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2B4233] text-[10px] font-bold text-white">
-                    {idx + 1}
+                  <Sparkles className="h-4 w-4 text-[#F2A86F]" />
+                  <span>
+                    {isAdapting
+                      ? 'Réadaptation du plan en cours...'
+                      : 'Adapter mon plan selon ma progression'}
                   </span>
-                  <span className="text-[11px] text-[#5E6B62]">{tip}</span>
+                </button>
+              </div>
+
+              {/* Strategic Moroccan Market Advice Card */}
+              <div className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#1D2A22]">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FAF7F2] text-[#D97E3E] border border-[#E8E0D2]">
+                    <Lightbulb className="h-4 w-4" />
+                  </div>
+                  Conseil Stratégique Marché Maroc
                 </div>
-              ))}
+                <p className="text-xs text-[#5E6B62] leading-relaxed">
+                  {plan.strategicAdvice}
+                </p>
+
+                <div className="rounded-2xl bg-[#FAF7F2] border border-[#E8E0D2] p-3 text-[11px] text-[#1D2A22] flex items-start gap-2.5">
+                  <MapPin className="h-4 w-4 text-[#D97E3E] shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#1D2A22] block">Focus {userCityName}</span>
+                    <span className="text-[#5E6B62] leading-tight block">
+                      {plan.localMarketNote}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interview Preparation Tips */}
+              <div className="rounded-[28px] bg-white border border-[#E8E0D2] p-5 shadow-sm space-y-3">
+                <h2 className="font-display text-xs font-bold text-[#1D2A22] flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-[#D97E3E]" />
+                  Questions Clés en Entretien Technique (Maroc)
+                </h2>
+                <div className="space-y-2">
+                  {plan.interviewTips.map((tip, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl bg-[#FAF7F2] p-3 text-xs text-[#1D2A22] leading-snug flex items-start gap-2.5 border border-[#E8E0D2]"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2B4233] text-[10px] font-bold text-white">
+                        {idx + 1}
+                      </span>
+                      <span className="text-[11px] text-[#5E6B62]">{tip}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Action Buttons Footer */}
           <div className="grid grid-cols-2 gap-3 pt-2">
@@ -888,6 +974,42 @@ export const CareerPlannerPage: React.FC<CareerPlannerPageProps> = ({
             >
               <RotateCcw className="h-3.5 w-3.5 text-[#F2A86F]" />
               Régénérer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* WARM EMPTY STATE (No plan active and not generating or editing config) */}
+      {!isGenerating && !showConfig && !plan && (
+        <div className="relative overflow-hidden rounded-[32px] bg-white border border-[#E8E0D2] p-8 text-center space-y-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#F2A86F]/15" />
+          <div className="pointer-events-none absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-[#2B4233]/5" />
+
+          <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#FAF7F2] text-[#2B4233] border border-[#E8E0D2] shadow-xs">
+            <Sparkles className="h-9 w-9 text-[#D97E3E]" />
+          </div>
+
+          <div className="relative space-y-2 max-w-xs mx-auto">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#FDE8D3] px-3 py-1 text-[11px] font-bold text-[#D97E3E]">
+              <Sparkles className="h-3 w-3" />
+              Intelligence Marché Maroc
+            </span>
+            <h2 className="font-display text-lg font-bold text-[#1D2A22]">
+              Aucune feuille de route active
+            </h2>
+            <p className="text-xs text-[#5E6B62] leading-relaxed">
+              Sélectionne ton poste cible et génère ton plan d&apos;action personnalisé avec jalons hebdomadaires et projet portfolio adapté.
+            </p>
+          </div>
+
+          <div className="relative pt-1">
+            <button
+              type="button"
+              onClick={() => setShowConfig(true)}
+              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#2B4233] px-6 py-3.5 text-xs font-bold text-white hover:bg-[#203327] active:scale-95 transition-all shadow-md cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4 text-[#F2A86F] stroke-[2.5]" />
+              Créer ma feuille de route
             </button>
           </div>
         </div>

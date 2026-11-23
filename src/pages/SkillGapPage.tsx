@@ -157,7 +157,7 @@ export const SkillGapPage: React.FC<SkillGapPageProps> = ({
 
           {/* Right: Simulated Score */}
           <div
-            className={`rounded-2xl p-3.5 text-center transition-colors ${
+            className={`rounded-2xl p-3.5 text-center transition-all duration-300 ease-out ${
               isSimulating
                 ? 'bg-[#E6F4EC] text-[#1D2A22]'
                 : 'bg-white/10 text-white'
@@ -274,7 +274,7 @@ export const SkillGapPage: React.FC<SkillGapPageProps> = ({
                     }
                   }}
                   aria-pressed={isSelected}
-                  className={`flex items-center justify-between gap-3 rounded-2xl border p-4 transition-all cursor-pointer ${
+                  className={`flex items-center justify-between gap-3 rounded-2xl border p-4 transition-all duration-300 ease-out cursor-pointer ${
                     isSelected
                       ? 'bg-[#FDE8D3] border-[#F2A86F] shadow-xs'
                       : 'bg-white border-[#E8E0D2] hover:border-[#CFC4B2]'

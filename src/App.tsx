@@ -59,6 +59,25 @@ function CareerRadarApp() {
   const [staleReminderCount, setStaleReminderCount] = useState(0);
   const [autoMarkedCount, setAutoMarkedCount] = useState(0);
 
+  // Dark Mode Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => storage.getTheme());
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (theme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
+    storage.setTheme(theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   // Global Application Modal state (accessible via center FAB, Tracker, and Dashboard)
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<JobApplication | null>(null);
@@ -259,9 +278,9 @@ function CareerRadarApp() {
     route === 'profile';
 
   return (
-    <div className="min-h-screen bg-[#E6DFD3] flex justify-center">
+    <div className="min-h-screen bg-[#E6DFD3] app-outer-bg flex justify-center">
       {/* Centered Native-Style Mobile App Shell */}
-      <div className="relative w-full max-w-md min-h-screen bg-[#F7F3EB] shadow-[0_0_50px_rgba(32,51,39,0.16)] flex flex-col">
+      <div className="relative w-full max-w-md min-h-screen bg-[#F7F3EB] app-mobile-shell shadow-[0_0_50px_rgba(32,51,39,0.16)] flex flex-col">
         {/* Non-intrusive Offline Banner when disconnected */}
         {!isOnline && (
           <div
@@ -348,6 +367,8 @@ function CareerRadarApp() {
                 profile={profile}
                 applicationsCount={applications.length}
                 storageHealth={storageHealth}
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
                 onEditProfile={() => setRoute('setup')}
                 onExportJSON={() => void handleExportJSON()}
                 onExportCSV={handleExportCSV}

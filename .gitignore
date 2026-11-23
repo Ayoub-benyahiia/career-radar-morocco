@@ -30,3 +30,4 @@ full_test*.cjs
 capture_*.cjs
 verify_*.cjs
 test_*.cjs
+.vercel

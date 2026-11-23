@@ -144,7 +144,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={dashOffset}
-                  className="transition-all duration-500"
+                  className="transition-all duration-500 ease-out"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">

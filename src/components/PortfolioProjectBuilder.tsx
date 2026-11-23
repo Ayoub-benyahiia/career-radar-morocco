@@ -11,6 +11,7 @@ import {
   Github,
   Globe,
   MapPin,
+  Plus,
   Sparkles,
 } from 'lucide-react';
 import type { PortfolioProjectItem } from '../types/career';
@@ -21,6 +22,7 @@ import {
 } from '../data/portfolioProjects';
 import { storage } from '../db/storage';
 import { getSafeExternalUrl } from '../utils/formatters';
+import { triggerConfetti } from '../utils/confetti';
 
 interface PortfolioProjectBuilderProps {
   targetRoleTitle: string;
@@ -113,6 +115,15 @@ export const PortfolioProjectBuilder: React.FC<PortfolioProjectBuilderProps> = (
 
   const handleToggleStep = async (stepId: string) => {
     if (!activeProject) return;
+
+    // Check if toggling this step completes the entire 5-step checklist
+    const willBeAllDone = activeProject.steps.every((s) =>
+      s.id === stepId ? !s.completed : s.completed
+    );
+    if (willBeAllDone) {
+      triggerConfetti({ count: 85 });
+      onShowToast('🏆 Félicitations ! Projet 100% prêt pour ton CV !');
+    }
 
     // Optimistic UI update
     const updated = {
@@ -358,41 +369,49 @@ export const PortfolioProjectBuilder: React.FC<PortfolioProjectBuilderProps> = (
 
         {/* Quick Links Preview if set */}
         {!editingLinks && (
-          <div className="flex flex-wrap items-center gap-2">
-            {safeRepoUrl ? (
-              <a
-                href={safeRepoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#E8E0D2] px-2.5 py-1 text-xs font-semibold text-[#1D2A22] hover:bg-[#F2ECE1] transition-colors"
-              >
-                <Github className="h-3 w-3" />
-                <span>Code GitHub</span>
-                <ExternalLink className="h-2.5 w-2.5 text-[#5E6B62]" />
-              </a>
-            ) : (
-              <span className="text-[10px] text-[#5E6B62] italic">
-                Aucun lien GitHub renseigné
-              </span>
-            )}
+          safeRepoUrl || safeDemoUrl ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {safeRepoUrl && (
+                <a
+                  href={safeRepoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#E8E0D2] px-2.5 py-1 text-xs font-semibold text-[#1D2A22] hover:bg-[#F2ECE1] transition-colors"
+                >
+                  <Github className="h-3 w-3" />
+                  <span>Code GitHub</span>
+                  <ExternalLink className="h-2.5 w-2.5 text-[#5E6B62]" />
+                </a>
+              )}
 
-            {safeDemoUrl ? (
-              <a
-                href={safeDemoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#2B4233] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#203327] transition-colors"
+              {safeDemoUrl && (
+                <a
+                  href={safeDemoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#2B4233] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#203327] transition-colors"
+                >
+                  <Globe className="h-3 w-3 text-[#F2A86F]" />
+                  <span>Démo en ligne</span>
+                  <ExternalLink className="h-2.5 w-2.5 text-[#F2A86F]" />
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-[#FAF7F2] border border-[#E8E0D2] p-3 text-center space-y-2">
+              <p className="text-[11px] text-[#5E6B62]">
+                Aucun lien GitHub ou démo en ligne attaché pour le moment.
+              </p>
+              <button
+                type="button"
+                onClick={() => setEditingLinks(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#2B4233] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#203327] transition-all cursor-pointer shadow-2xs"
               >
-                <Globe className="h-3 w-3 text-[#F2A86F]" />
-                <span>Démo en ligne</span>
-                <ExternalLink className="h-2.5 w-2.5 text-[#F2A86F]" />
-              </a>
-            ) : (
-              <span className="text-[10px] text-[#5E6B62] italic">
-                · Aucune démo en ligne renseignée
-              </span>
-            )}
-          </div>
+                <Plus className="h-3.5 w-3.5 text-[#F2A86F]" />
+                <span>Renseigner mes liens GitHub &amp; Démo</span>
+              </button>
+            </div>
+          )
         )}
 
         {/* Inputs View */}

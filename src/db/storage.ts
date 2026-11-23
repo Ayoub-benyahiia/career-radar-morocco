@@ -472,6 +472,32 @@ class CareerRadarStorage {
       // ignore
     }
   }
+
+  private inMemoryTheme: 'light' | 'dark' = 'light';
+
+  getTheme(): 'light' | 'dark' {
+    if (typeof window === 'undefined') return this.inMemoryTheme;
+    try {
+      const stored = window.localStorage.getItem('career_radar_theme_v1');
+      if (stored === 'dark' || stored === 'light') return stored;
+      if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    } catch {
+      // ignore
+    }
+    return this.inMemoryTheme;
+  }
+
+  setTheme(theme: 'light' | 'dark'): void {
+    this.inMemoryTheme = theme;
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('career_radar_theme_v1', theme);
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export const storage = new CareerRadarStorage();

@@ -389,39 +389,68 @@ export const TrackerPage: React.FC<TrackerPageProps> = ({
 
       {/* Section 5.4: Application Cards List */}
       {applications.length === 0 ? (
-        <section className="rounded-[28px] bg-white border border-[#E8E0D2] p-8 text-center space-y-4">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#FDE8D3] text-[#2B4233]">
-            <Briefcase className="h-7 w-7" />
+        <section className="relative overflow-hidden rounded-[32px] bg-white border border-[#E8E0D2] p-8 text-center space-y-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#F2A86F]/15" />
+          <div className="pointer-events-none absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-[#2B4233]/5" />
+
+          <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#FAF7F2] text-[#2B4233] border border-[#E8E0D2] shadow-xs">
+            <Briefcase className="h-9 w-9 text-[#D97E3E]" />
           </div>
-          <div className="space-y-1.5">
-            <h2 className="font-display text-base font-bold text-[#1D2A22]">
+
+          <div className="relative space-y-2 max-w-xs mx-auto">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#FDE8D3] px-3 py-1 text-[11px] font-bold text-[#D97E3E]">
+              <Sparkles className="h-3 w-3" />
+              Suivi 100% Hors-Ligne
+            </span>
+            <h2 className="font-display text-lg font-bold text-[#1D2A22]">
               Aucune candidature enregistrée
             </h2>
-            <p className="text-sm text-[#5E6B62] leading-relaxed">
-              Commence à suivre tes postulations ! Tout reste accessible même sans connexion.
+            <p className="text-xs text-[#5E6B62] leading-relaxed">
+              Organise tes postulations, active les alertes de relance automatique à 7 jours et prépare tes entretiens techniques.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onAddNew}
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#2B4233] px-5 py-3 text-sm font-semibold text-white hover:bg-[#203327] transition-colors cursor-pointer"
-          >
-            <Plus className="h-4 w-4 text-[#F2A86F]" />
-            Ajouter ma première candidature
-          </button>
+
+          <div className="relative pt-1">
+            <button
+              type="button"
+              onClick={onAddNew}
+              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#2B4233] px-6 py-3.5 text-xs font-bold text-white hover:bg-[#203327] active:scale-95 transition-all shadow-md cursor-pointer"
+            >
+              <Plus className="h-4 w-4 text-[#F2A86F] stroke-[2.5]" />
+              Ajouter ma première candidature
+            </button>
+          </div>
         </section>
       ) : filteredApplications.length === 0 ? (
-        <section className="rounded-3xl bg-white border border-[#E8E0D2] p-6 text-center space-y-2">
-          <p className="text-sm font-medium text-[#1D2A22]">
-            Aucune candidature dans cet onglet.
-          </p>
-          <button
-            type="button"
-            onClick={() => setActiveFilter('all')}
-            className="text-xs font-semibold text-[#2B4233] underline cursor-pointer"
-          >
-            Afficher toutes les candidatures ({counts.all})
-          </button>
+        <section className="rounded-[28px] bg-white border border-[#E8E0D2] p-7 text-center space-y-3 shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF7F2] text-[#5E6B62] border border-[#E8E0D2]">
+            <Briefcase className="h-5 w-5 text-[#5E6B62]" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-[#1D2A22]">
+              Aucune opportunité dans « {FILTER_TABS.find((t) => t.key === activeFilter)?.label} »
+            </p>
+            <p className="text-xs text-[#5E6B62]">
+              Change de filtre ou ajoute une nouvelle candidature pour la suivre ici.
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setActiveFilter('all')}
+              className="text-xs font-semibold text-[#2B4233] underline cursor-pointer hover:text-[#1D2A22]"
+            >
+              Voir toutes ({counts.all})
+            </button>
+            <span className="text-[#E8E0D2]">·</span>
+            <button
+              type="button"
+              onClick={onAddNew}
+              className="text-xs font-bold text-[#D97E3E] cursor-pointer hover:underline"
+            >
+              + Ajouter une offre
+            </button>
+          </div>
         </section>
       ) : (
         <div className="space-y-3">
