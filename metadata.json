@@ -1,0 +1,6 @@
+{
+  "name": "Career Radar",
+  "description": "PWA hors-ligne d'orientation et de suivi de candidatures IT au Maroc. Mesure ta compatibilité marché sur 10 782 offres, simule le ROI de tes compétences et gère tes postulations localement.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
